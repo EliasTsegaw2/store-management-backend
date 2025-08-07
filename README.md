@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Store Management Backend
 
 This is a backend store management system built with Node.js and Express. It provides a RESTful API for managing products, users, and orders.
@@ -65,3 +66,6 @@ Contributions are welcome! Please open an issue or submit a pull request.
 ## License
 
 This project is licensed under the MIT License.
+=======
+# store-management-backend
+>>>>>>> deade2f8d959699e184536ddcb233016dec10227
