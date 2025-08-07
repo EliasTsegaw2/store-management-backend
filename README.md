@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Store Management Backend
 
 This is a backend store management system built with Node.js and Express. It provides a RESTful API for managing products, users, and orders.
@@ -40,24 +39,6 @@ npm start
 The server will start on the specified port (default is 3000).
 
 ## API Endpoints
-
-- **Products**
-  - `GET /products` - Retrieve all products
-  - `POST /products` - Create a new product
-  - `PUT /products/:id` - Update a product
-  - `DELETE /products/:id` - Delete a product
-
-- **Users**
-  - `GET /users` - Retrieve all users
-  - `POST /users` - Create a new user
-  - `PUT /users/:id` - Update a user
-  - `DELETE /users/:id` - Delete a user
-
-- **Orders**
-  - `GET /orders` - Retrieve all orders
-  - `POST /orders` - Create a new order
-  - `PUT /orders/:id` - Update an order
-  - `DELETE /orders/:id` - Delete an order
 
 ## Contributing
 
