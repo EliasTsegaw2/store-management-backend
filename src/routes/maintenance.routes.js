@@ -9,7 +9,7 @@ const {
 
 const jwtAuth = passport.authenticate('jwt', { session: false });
 
-router.post('/', jwtAuth, authorizeRoles('Technician', 'StoreManager'), createMaintenance);
-router.get('/', jwtAuth, authorizeRoles('StoreManager', 'Technician'), getAllMaintenance);
+router.post('/', jwtAuth, authorizeRoles('ARA', 'StoreManager'), createMaintenance);
+router.get('/', jwtAuth, authorizeRoles('StoreManager','Lecturer', 'ARA', 'DepartmentHead'), getAllMaintenance);
 
 module.exports = router;
