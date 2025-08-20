@@ -3,28 +3,69 @@ const { Request, Inventory } = require('../models');
 
 const createRequest = async (req, res) => {
     try {
-        const {
-            studentName, studentId, department, courseCode,
-            courseName, instructor, reason, pickupDate, components
-        } = req.body;
+        const { role } = req.user;
+        let newRequestData = {
+            requestedBy: req.user._id,
+            requesterRole: role // Store the user's role in the request
+        };
 
-        for (const item of components) {
-            const inv = await Inventory.findById(item._id);
-            if (!inv || inv.available < item.quantity) {
-                return res.status(400).json({ error: `Insufficient stock for ${inv?.name || 'Unknown Component'}` });
+        if (role === 'Student') {
+            const {
+                studentName, studentId, department, courseCode,
+                courseName, instructor, reason, pickupDate, components
+            } = req.body;
+
+            // Validate required fields for students
+            if (!studentName || !studentId || !department || !reason || !pickupDate || !components) {
+                return res.status(400).json({ error: 'Missing required student fields.' });
             }
+
+            for (const item of components) {
+                const inv = await Inventory.findById(item._id);
+                // Only allow components for students
+                if (!inv || inv.type !== 'component' || inv.available < item.quantity) {
+                    return res.status(400).json({ error: `Insufficient stock or not a component for ${inv?.name || 'Unknown Component'}` });
+                }
+            }
+
+            newRequestData = {
+                ...newRequestData,
+                studentName, studentId, department, courseCode,
+                courseName, instructor, reason, pickupDate,
+                components: components.map(c => ({
+                    productId: c._id,
+                    quantity: c.quantity
+                }))
+            };
+        } else if (role === 'Lecturer' || role === 'ARA') {
+            const { reason, duration, components } = req.body;
+
+            if (!reason || !components) {
+                return res.status(400).json({ error: 'Missing required fields for lecturer/ARA.' });
+            }
+
+            for (const item of components) {
+                const inv = await Inventory.findById(item._id);
+                // Allow both components and equipment for Lecturer/ARA
+                if (!inv || inv.available < item.quantity) {
+                    return res.status(400).json({ error: `Insufficient stock for ${inv?.name || 'Unknown Item'}` });
+                }
+            }
+
+            newRequestData = {
+                ...newRequestData,
+                reason,
+                duration,
+                components: components.map(c => ({
+                    productId: c._id,
+                    quantity: c.quantity
+                }))
+            };
+        } else {
+            return res.status(403).json({ error: 'Unauthorized request type.' });
         }
 
-        const newRequest = new Request({
-            studentName, studentId, department, courseCode,
-            courseName, instructor, reason, pickupDate,
-            components: components.map(c => ({
-                productId: c._id,
-                quantity: c.quantity
-            })),
-            requestedBy: req.user._id
-        });
-
+        const newRequest = new Request(newRequestData);
         await newRequest.save();
         res.status(201).json({ message: 'Request submitted successfully.' });
     } catch (err) {
