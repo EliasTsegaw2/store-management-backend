@@ -7,15 +7,19 @@ const {
   getPendingRequests,
   approveRequest,
   dispatchRequest,
-  getApprovedRequests
+  getApprovedRequests,
+  returnRequest
 } = require('../controllers/request.controller');
 
 const jwtAuth = passport.authenticate('jwt', { session: false });
 
-router.post('/', jwtAuth, authorizeRoles('Student', 'DepartmentHead'), createRequest);
-router.get('/pending', jwtAuth, authorizeRoles('DepartmentHead'), getPendingRequests);
+// Allow Students, ARA, and Lecturer to create requests
+router.post('/', jwtAuth, authorizeRoles('Student', 'ARA', 'Lecturer'), createRequest);
+
+router.get('/pending', jwtAuth, getPendingRequests);
 router.patch('/:id/approve', jwtAuth, authorizeRoles('DepartmentHead'), approveRequest);
-router.post('/:id/dispatch', jwtAuth, authorizeRoles('StoreManager'), dispatchRequest);
+router.patch('/:id/dispatch', jwtAuth, authorizeRoles('StoreManager'), dispatchRequest);
+router.patch('/:id/return', jwtAuth, authorizeRoles('StoreManager'), returnRequest);
 router.get('/approved', jwtAuth, authorizeRoles('StoreManager', 'DepartmentHead'), getApprovedRequests);
 
 module.exports = router;

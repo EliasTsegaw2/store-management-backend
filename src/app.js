@@ -8,6 +8,9 @@ const passport = require('passport');
 const cors = require('cors');
 const routes = require('./routes'); // Auto-loads index.js in routes folder
 const { errorHandler } = require('./middlewares');
+const helmet = require('helmet');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 
 // Initialize app
 const app = express();
@@ -18,6 +21,9 @@ const mongoURI = process.env.DATABASE_URL;
 app.use(cors());
 app.use(express.json()); // No need for body-parser
 app.use(passport.initialize());
+app.use(helmet());
+app.use(compression());
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 500 }));
 require('./config/passport');
 
 // MongoDB Connection

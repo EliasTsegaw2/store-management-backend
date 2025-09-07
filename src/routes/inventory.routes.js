@@ -14,9 +14,27 @@ const storage = multer.memoryStorage();
 const multerUpload = multer({ storage });
 const jwtAuth = passport.authenticate('jwt', { session: false });
 
+// Accept both image and pdf files
+const uploadFields = multerUpload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'pdf', maxCount: 1 }
+]);
+
 router.get('/', jwtAuth, getInventory);
-router.post('/', jwtAuth, authorizeRoles('StoreManager'), addInventory);
-router.put('/:id', jwtAuth, authorizeRoles('StoreManager'), multerUpload.single('image'), updateInventory);
+router.post(
+  '/',
+  jwtAuth,
+  authorizeRoles('StoreManager'),
+  uploadFields, // <-- Accept image and pdf
+  addInventory
+);
+router.put(
+  '/:id',
+  jwtAuth,
+  authorizeRoles('StoreManager'),
+  uploadFields, // <-- Accept image and pdf
+  updateInventory
+);
 router.delete('/:id', jwtAuth, authorizeRoles('StoreManager'), deleteInventory);
 
 module.exports = router;

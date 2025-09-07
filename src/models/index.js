@@ -15,14 +15,32 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  googleId: { type: String },
   displayName: { type: String },
+  photo: { type: String }, // Profile image URL
+  phone: { type: String },
+  address: {
+    country: String,
+    city: String,
+    street: String,
+    postalCode: String
+  },
   role: {
     type: String,
     enum: ['ARA', 'Lecturer', 'DepartmentHead', 'StoreManager', 'Student'],
     default: 'Student',
     required: true
-  }
+  },
+  // Student-specific
+  studentId: { type: String },
+  department: { type: String },
+  courseCode: { type: String },
+  yearOfStudy: { type: String },
+  // Staff-specific
+  employeeId: { type: String },
+  position: { type: String },
+  officeLocation: { type: String },
+  createdAt: { type: Date, default: Date.now },
+  lastLogin: { type: Date }
 }, { timestamps: true });
 
 // Hash password before saving
@@ -52,9 +70,10 @@ const locationSchema = new mongoose.Schema({
 
 const inventorySchema = new mongoose.Schema({
   name: { type: String, required: true },
-  model: { type: String, required: true, unique: true },
+  model: { type: String, required: true },
   total: { type: Number, required: true, default: 0 },
   available: { type: Number, required: true, default: 0 },
+  reserved: { type: Number, required: true, default: 0 }, // NEW: reserved for approved requests
   type: {
     type: String,
     enum: ['component', 'equipment'],
@@ -66,18 +85,20 @@ const inventorySchema = new mongoose.Schema({
     default: 'Good'
   },
   imageUrl: { type: String },
+  pdfUrl: { type: String },
   location: locationSchema,
   description: { type: String },
   lastMaintenance: { type: Date },
 }, { timestamps: true });
 
-// Validation to ensure available does not exceed total
+// Ensure available + reserved <= total
 inventorySchema.pre('save', function (next) {
-  if (this.available > this.total) {
-    return next(new Error('Available quantity cannot exceed total quantity.'));
+  if (this.available + this.reserved > this.total) {
+    return next(new Error('Available + Reserved cannot exceed Total.'));
   }
   next();
 });
+
 // Maintenance Schema
 const maintenanceSchema = new mongoose.Schema({
   item: { type: mongoose.Schema.Types.ObjectId, ref: 'Inventory', required: true },
@@ -87,25 +108,70 @@ const maintenanceSchema = new mongoose.Schema({
   actions: { type: String, enum: ['Scheduled', 'Completed'], default: 'Scheduled' },
 }, { timestamps: true });
 
-//Reqiest Schema 
+// Request Schema 
 const requestSchema = new mongoose.Schema({
-  studentName: { type: String, required: true },
-  studentId: { type: String, required: true },
-  department: { type: String, required: true },
+  // Who requested
+  requestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  requesterRole: {
+    type: String,
+    enum: ['ARA', 'Lecturer', 'DepartmentHead', 'StoreManager', 'Student'],
+    required: true
+  },
+
+  // Student fields (optional for non-students)
+  studentName: { type: String },
+  studentId: { type: String },
+  department: { type: String },
   courseCode: { type: String },
   courseName: { type: String },
   instructor: { type: String },
+  pickupDate: { type: Date },
+
+  // Common fields
   reason: { type: String, required: true },
-  pickupDate: { type: Date, required: true },
+  duration: { type: String }, // For ARA/Lecturer borrowing duration
+
+  // Line items and life-cycle quantities
   components: [{
     productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Inventory', required: true },
-    quantity: { type: Number, required: true },
+    quantity: { type: Number, required: true, min: 0 },
+    allocated: { type: Number, default: 0, min: 0 },   // NEW
+    dispatched: { type: Number, default: 0, min: 0 },  // NEW
+    returned: { type: Number, default: 0, min: 0 }
   }],
-  requestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  approved: { type: Boolean, default: false },
-  approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  dispatched: { type: Boolean, default: false },     
-  dispatchedAt: { type: Date },
+
+  // Approval
+  approved: { type: Boolean, default: false },         // NEW
+  approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // NEW
+
+  // Dispatch
+  dispatched: { type: Boolean, default: false },       // NEW
+  dispatchedAt: { type: Date },                        // NEW
+
+  // Status
+  status: {
+    type: String,
+    enum: [
+      'PendingApproval',
+      'Approved',
+      'PartiallyAllocated',
+      'Allocated',
+      'PartiallyDispatched',
+      'Dispatched',
+      'PartiallyReturned',   // NEW
+      'Completed',
+      'Cancelled'
+    ],
+    default: 'PendingApproval'
+  },
+
+  // Returns
+  returned: { type: Boolean, default: false },
+  returnedAt: { type: Date },
+  returnNote: { type: String },
+
+  // Allocation hold window
+  allocationExpiresAt: { type: Date },
 }, { timestamps: true });
 
 
